@@ -1,0 +1,142 @@
+---
+title: "Skilaverkefni 1"
+author: "Atli Snaer Kristjansson, Valdimar Orn Sverrisson"
+date: "1/17/2022"
+output: html_document
+---
+
+```{r setup, message = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readr)
+library(dplyr)
+library(lubridate) # pakki med follum fyrir vinnslu med dagsetningar (date eda datetime breytur)
+library(ggplot2)
+```
+
+a)
+Hérna á að vera einhver amazing útskýring á því hvað dæmið snýst um
+
+```r
+AV <- read_csv("./data/vedurgogn.csv")
+AV <- rename(AV
+, stod = stöð 
+, ar = ár
+, man = mán
+, medalHitiPerAr = t
+, medalMaxHitiPerAr= tx
+, maxHitiPerMan = txx
+, dagsettningMaxHita = txxD1
+, medalMinHiti = tn
+, minHitiPerMan = tnn
+, dagsettningMinHita = tnnD1
+, medalRakastig = rh
+, heildarUrkomaPerMan = r
+, maxDagUrkomaPerMan = rx
+, dagsettningMaxUrkoma = rxD1
+, medalThristingur = p
+, medalSkyjahula = n
+, solskynsStundir = sun
+, medalVindhradi = f )
+print(AV)
+```
+##b)
+```r
+AV %>%
+  glimpse()
+```
+  
+##c)
+Solskynsstundir voru með 21 NA's sem að við fjarlaegðum
+MedalRakastig, medalMaxHitiPerAr,maxHitiPerMan og dagsettningMaxHita voru hver með 
+1 NA's í sér sem að við fjarlægðum
+```r
+AV %>%
+  na.omit() %>%
+  summary()
+    
+```
+
+##d)
+library(ggplot2)
+  
+AV <- mutate(AV, nafn = recode_factor(stod,
+                           `1` = "Reykjavik",
+                           `422` = "Akureyri"
+                          ))
+  
+winter <- c(1,2,12)
+spring <- c(3,4,5)
+summer <- c(6,7,8)
+autumn <- c(9,10,11)
+
+AV$arstid = ifelse(AV$man %in% winter, "vetur",
+              ifelse(AV$man %in% spring, "vor",
+                ifelse(AV$man %in% summer, "sumar",
+                  ifelse(AV$man %in% autumn, "haust", NA))))
+
+AV %>% 
+  mutate(arstid = recode_factor(man,
+  `12`= "Vetur", `1` = "Vetur",`2` = "Vetur",
+  `3` = "Vor",`4` = "Vor",`5` = "Vor",
+  `6` = "Sumar",`7` = "Sumar",`8` = "Sumar",
+  `9` = "Haust",`10` = "Haust",`11` = "Haust"
+  ))
+
+months <- c("Vetur", "Vor", "Sumar", "Haust)
+
+<!-- scale_x_discrete(limits = months) + -->
+
+AV %>%
+  filter(nafn == "Reykjavik") %>% 
+  ggplot(aes(x = arstid, y = solskynsStundir)) +
+    geom_bar(stat="Identity") +
+    labs(subtitle="", 
+       y="Meðalsólskynsstundir", 
+       x="Árstíðir", 
+       title="Meðalsólskynsstundir í Reykjavík eftir árstíðum", 
+       caption = "Source: yo momma")
+
+AV %>%
+  filter(nafn == "Akureyri") %>% 
+  ggplot(aes(x = arstid, y = solskynsStundir)) +
+    geom_bar(stat="Identity") +
+    labs(subtitle="", 
+       y="Meðalsólskynsstundir", 
+       x="Árstíðir", 
+       title="Meðalsólskynsstundir í Akureyri eftir árstíðum", 
+       caption = "Source: yo momma")
+  
+
+AV %>%
+  ggplot(aes(x = nafn, y = solskynsStundir)) +
+    geom_bar(stat="Identity") +
+    labs(subtitle="", 
+       y="Meðalsólskynsstundir", 
+       x="Borgir", 
+       title="Meðalsólskynsstundir í Borgum", 
+       caption = "Source: yo momma")
+  
+AV %>% 
+  ggplot(aes(x = nafn, y = solskynsStundir)) +
+  geom_count() 
+  labs(subtitle="Tset",
+     y="Meðalsólskynsstundir",
+     x="Borgir",
+     title="Meðalsólskynsstundir í Borgum",
+     caption = "Source: yo momma")
+ 
+ 
+ 
+##e)
+
+##f)
+##g)
+##h)
+##i)
+
+
+
+
+
+

@@ -1,0 +1,159 @@
+---
+title: "Skilaverkefni 1 - Sýnidæmi"
+author: "Líkindareikningur og tölfræði: STÆ203G, HAG206G, MAS201F. Atli Snær Kristjánsson & Valdimar Örn Sverrisson"
+output: 
+  rmarkdown::html_document
+---
+
+Þegar .Rmd skrá er knituð í .html skrá sækir hún ekki pakka og gögn í vinnuumhverfið í Rstudio heldur verða öll gögn og pakkar sem notaðir eru í skýrslunni að vera hlaðið inn í .Rmd skránna.
+
+```{r pakkar, warning=FALSE, message=FALSE}
+# Takid eftir stillingunum i hausnum a thessum R klump, thaer koma i veg fyrir ad library
+# prenti ut upplysingar um pakkana sem verid er ad hlada inn
+
+# Eg nota aldrei serislenska stafi i koda eda commentum thvi thad er skapar yfirleitt vesen
+library(readr)
+library(dplyr)
+library(lubridate) # pakki med follum fyrir vinnslu med dagsetningar (date eda datetime breytur)
+library(ggplot2)
+```
+
+Til þess að búa til svona .Rmd skrá í RStudio er farið í new -> RMarkdown -> merkja heiti skrár og höfund og velja html output.
+
+Til þess að knit-a .html skrá úr þessari .Rmd skrá er svo ýtt á knit takkann 
+
+## a) liður
+Til þess að fá upplýsingar um föll í R má kalla fram hjálparskrá fyrir þau með því að skrifa
+`?nafn_a_falli`
+í Console gluggann í RStudio, t.d.
+`?read_csv`
+
+Ég nota hér sýnikennslu gagnasettið, `vedurgogn.csv`.
+
+Við notum \`\` utan um texta til þess að fá monospace letur sem er hentugt ef við viljum birta kóða í miðjum texta.
+Flott að nota þetta utan um breytuheiti og skráarnöfn.
+
+```{r gogn, message=FALSE}
+# Haegt ad setja inn kodaklump i skranna med thvi ad fara i insert -> code chunk i RStudio
+# Thad er lika til flytiskipun a lyklabordi til thess ad setja in klump, mogulega shift+ctrl+i
+# eda shift+cmd+i a mac, profid sjalf
+# Lika haegt ad handpikka inn ```{ o.s.fr...
+jh <- read_csv('./data/vedurgogn.csv')
+```
+
+## b) liður
+Skoðum hvaða dálkar (breytur) eru í gagnatöflunni og hvaða gagnatög (e. type) þeir eru.
+
+```{r}
+glimpse(jh)
+```
+Hér rita ég í samfelldu máli stuttan texta sem fjallar um hvort að gagnatög á dálkunum séu rétt og hvort það vanti einhverja gagnapunkta.
+Tilgreinum einnig hvort og þá hvaða dálkum við breytum gagnatagi á.
+Algengt er að þurfa að breyta talnabreytu í flokkabreytu (e. factor).
+
+## c) liður
+Búum til nýja flokkabreytur, mánuður og ár.
+
+```{r}
+# Thaegilegt ad nota pipurithatt thegar unnid er med foll ur tidyverse pokkum
+# By til dalka sem tilgreina manud og ar maelingar, flokkabreytur
+jh <- jh %>%
+  mutate(man=factor(month(dagsetning)), ar=factor(year(dagsetning)))
+```
+
+Skoðum svo gagnatöfluna.
+**Að skoða gagnatöfluna á þennan hátt er gert í Console glugganum í RStudio, ekki hafa þetta með í skýrslunni ykkar**
+```{r}
+# Til ad skoda gognin er haegt ad rita heitid a breytunni sem geymir thau beint i Console gluggann i RStudio
+jh
+
+# En tha er gagnataflan skrifud ut midad vid plass i uttaksglugganum.
+# Til thess ad neyda R til ad skrifa ut alla DALKA i gagnatoflu tharf ad gera
+print(jh, width=Inf)
+```
+
+## d) liður
+Notum group_by til að skoða undirhópa í gagnatöflunni.
+Skoðum svifryksmengunargildi niður á mánuð.
+
+```{r}
+# group_by byr til undirhopa i gagnaramma thannig ad follum er ekki beitt a alla tofluna i heild
+#   heldur hvern undirhop fyrir sig
+# Reikna medal svifryksmengun per manud i toflu og birti
+# (vista her ekki i nyrri breytu ne yfirskrifa jh breytuna heldur skrifa uttakid beint ut i skyrslu)
+jh %>% group_by(man) %>%
+  summarise(medal_pm10=mean(pm10, na.rm=TRUE), medal_pm25=mean(pm2_5, na.rm=TRUE))
+```
+
+Mars, apríl, ágúst og desember undanfarin 2 ár eru menguðustu mánuðurnir.
+Sjáum að það vantar mælingar á pm 2.5 fyrir nóvember.
+
+```{r}
+# Medal svifryk per ar
+jh %>% group_by(ar) %>%
+  summarise(medal_pm10=mean(pm10, na.rm=TRUE), medal_pm25=mean(pm2_5, na.rm=TRUE))
+```
+
+Árið 2018 var gott ár fyrir lungun.
+
+```{r}
+# Medal svifryk per ar per manud
+jh %>% group_by(ar, man) %>%
+  summarise(medal_pm10=mean(pm10, na.rm=TRUE), medal_pm25=mean(pm2_5, na.rm=TRUE))
+```
+
+*Smá dæmi um hvernig megi útskýra hvað útreikningar segja í samfelldu máli:*
+
+Gróft svifryk er að meðaltali áberandi hæst í mars og apríl árið 2019.
+Hæsta meðalgildið mælist í janúar 2020 en þar sem skammt er liðið á mánuðinn er ekki hægt að bera
+hann saman við aðra heila mánuði í töflunni.
+Fína svifrykið er að meðaltali mest í ágúst 2019 og desember 2019 sem sýnir að magn grófs og fíns svifryks í lofti helst ekki alltaf í hendur.
+
+Það er eitthvað skrítið í gangi með mæligildi í mánuðum þar sem NaN (not a number) gildi birtast.
+
+## e) liður
+Skoðum dreifingu mæligilda á vindhraða niður á mánuð.
+
+```{r}
+# Mynd sem synir dreifingu vindhrada i hverjum manudi
+jh %>%
+  ggplot(aes(x=man, y=vindhr)) +
+  geom_boxplot()
+```
+
+Miðgildið er hæst fyrir apríl svo að jafnaði hefur undanfarin 2 ár verið hvassast þá.
+Hins vegar geta dottið á vel hvassir dagar yfir vetrarmánuðina þó að jafnaði séu þeir rólegri en apríl.
+Sumarmánuðurnir hafa verið lygnastir.
+
+## f) liður
+Skoðum dreifingu vindrhaða síðustu mánuði áranna 2018 og 2019
+
+```{r}
+# Mynd sem synir dreifingu vindhrada i voldum sidustu manudi 2018 og 2019
+jh %>%
+  filter(ar %in% c(2018, 2019), man %in% 9:12) %>%
+  ggplot(aes(x=man, y=vindhr, col=ar)) +
+  geom_boxplot()
+```
+
+Haust og vetur 2018 voru að jafnaði hvassari en 2019 og munurinn er mestur í desember.
+
+## g) liður
+Reiknum meðalvindhraða og staðalfrávik vindhraða, geymum í breytum og birtum gildi breytanna í samfelldum texta sem er sérlega smart!
+
+```{r}
+medalvindur = mean(jh$vindhr, na.rm=TRUE)
+sdvindur = sd(jh$vindhr, na.rm=TRUE)
+```
+Meðalvindur undanfarin 2 ár er `r medalvindur` m/s og staðalfrávik mælinga á vindhraðanum er `r sdvindur` m/s.
+
+## Afhverju að búa til svona skýrslur þegar ég kann á Word?
+Word er fínt fyrir statískan texta sem breytist ekkert eftir að hann hefur verið ritaður.
+En þegar unnið er með gögn geta þau breyst af ýmsum ástæðum:
+Lagfærðar mælingar, nýjar mælingar, gömlum mælingum bætt við o.s.fr.
+Ef við höfum handritað stærðir (meðaltöl, miðgildi, töflur hvað sem er) í skýrslu (eins og við gerum í word) þá þurfum við að uppfæra hverja handritaða stærð handvirkt.
+Þegar skýrslur eru þokkaleg stórar fer mikill tími í þennan tvíverknað sem gæti orðið margverknaður af því að það gögn geta uppfærst oft (algengara en ekki að gögn uppfærist hratt).
+
+En ef við nýtum okkur það að geta knitað svona skýrslu sem inniheldur kóða sem framleiðir töflur, birt gildi breyta í samfelldum texta (í stað þess að skrifa gildið sjálft í textann) þá þurfum við aldrei að uppfæra neinar stærðir handvirkt þegar gögnin breytast heldur er nóg að ýta aftur á knit takkann og allt í skýrslunni uppfærist sjálfkrafa.
+
+Það er líka algengt að unnið sé með svipuð gögn aftur og aftur og nýjar skýrslur skrifaðar en þá er auðvelt að endurnýta eldri skýrslu sem byrjunarpunkt fyrir nýju skýrsluna og í því felst mikill tímasparnaður.
