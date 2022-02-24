@@ -1,0 +1,79 @@
+---
+title: "Skilaverkefni 2"
+author: "Atli Snær Kristjánsson, Valdimar Örn Sverrisson"
+date: "25.2.2022"
+output: html_document
+---
+```{r setup, message = FALSE, warning = FALSE, display = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+library(tidyverse)
+library(readr)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+```
+
+## a)
+```{r}
+litir <- c("#f24236","#00a6fb") # skilgreining á litum sem verða notaðir í öllum gröfum í verkefninu
+set.seed(1011)
+hverfi <- sample(c(20,90,100), 1)
+
+AV <- read_csv2("./data/husnaedi.csv")
+AV <- filter(AV, matssvaedi == hverfi)
+```
+
+## b)
+```{r}
+medal_verd <- mean(AV$nuvirdi)
+dreifni_verd <- var(AV$nuvirdi)
+ggplot(AV, aes(x = nuvirdi)) +
+  geom_histogram(color = "#000000", fill = "#00a6fb") +
+  labs(title="Dreifing íbúðarverða",
+       subtitle="Á Laugarnesi/Vogum 2017",
+       y="Fjöldi",
+       x="Verð í þ.kr",
+       caption = "Source: Fasteignarmat Þjóðskrá Ísland 2016")
+```
+
+Meðalverðið á íbúðum á Laugarnesi/Vogum er `r format(medal_verd, scientific = FALSE)` og drefingin er `r format(dreifni_verd, scientific = FALSE) `
+
+## c)
+```{r}
+medaltol <- c()
+for(i in 1:5000) { 
+  medaltol <- c(medaltol, mean(sample(AV$nuvirdi, size = i , replace = TRUE)))
+  }
+
+qplot(1:5000, medaltol) + 
+  geom_hline(yintercept = medal_verd, color ="#ff0000") +
+  labs(title="Weird ass meðaltalanálgun",
+       subtitle="Á Laugarnesi/Vogum 2017",
+       y="Meðalverð í þ.kr",
+       x="Fjöldi staka í meðaltalinu",
+       caption = "Source: Fasteignarmat Þjóðskrá Ísland 2016")
+```
+
+## d)
+```{r}
+staerd1 <- replicate(10000, mean(sample(AV$nuvirdi, size = 2)))
+staerd2 <- replicate(10000, mean(sample(AV$nuvirdi, size = 5)))
+staerd3 <- replicate(10000, mean(sample(AV$nuvirdi, size = 20)))
+staerd4 <- replicate(10000, mean(sample(AV$nuvirdi, size = 400)))
+```
+
+## e)
+
+```{r}
+staerdir <- tibble(staerd1, staerd2, staerd3, staerd4)
+super_hot <- pivot_longer(staerdir, cols = starts_with("staerd"))
+glimpse(super_hot)
+p <- ggplot(super_hot, aes(name))) + geom_bar()
+# Use vars() to supply faceting variables:
+p + facet_wrap(vars(name))
+```
+
+
+
+

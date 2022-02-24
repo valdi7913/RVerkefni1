@@ -5,7 +5,7 @@ date: "1/17/2022"
 output: html_document
 ---
 
-```{r setup, message = FALSE, warning = FALSE}
+```{r setup, message = FALSE, warning = FALSE, display = FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(readr)
@@ -14,129 +14,328 @@ library(lubridate) # pakki med follum fyrir vinnslu med dagsetningar (date eda d
 library(ggplot2)
 ```
 
-a)
-Hérna á að vera einhver amazing útskýring á því hvað dæmið snýst um
+## a)
 
-```r
-AV <- read_csv("./data/vedurgogn.csv")
-AV <- rename(AV
+Endurnefning dálka yfir í viðeigandi nöfn. Ákveðið var að sleppa öllum séríslenskum
+stöfum úr nöfnum þeirra til að koma í veg fyrir vesen í forritun og nota camel case í nöfnunum.
+
+
+```{r}
+litir <- c("#f24236","#00a6fb") # skilgreining á litum sem verða notaðir í öllum gröfum í verkefninu
+BC <- read.csv("./data/vedurgogn.csv")
+BC <- rename(AV
 , stod = stöð 
 , ar = ár
 , man = mán
-, medalHitiPerAr = t
-, medalMaxHitiPerAr= tx
-, maxHitiPerMan = txx
-, dagsettningMaxHita = txxD1
+, medalHiti = t
+, medalMaxHiti= tx
+, maxHiti = txx
+, dagsetningMaxHita = txxD1
 , medalMinHiti = tn
-, minHitiPerMan = tnn
-, dagsettningMinHita = tnnD1
+, minHiti = tnn
+, dagsetningMinHita = tnnD1
 , medalRakastig = rh
-, heildarUrkomaPerMan = r
-, maxDagUrkomaPerMan = rx
-, dagsettningMaxUrkoma = rxD1
+, heildarUrkoma = r
+, maxSolahringsUrkoma = rx
+, dagsetningMaxSolahringsUrkoma = rxD1
 , medalThristingur = p
 , medalSkyjahula = n
-, solskynsStundir = sun
+, solskinsStundir = sun
 , medalVindhradi = f )
-print(AV)
 ```
-##b)
-```r
+
+## b)
+
+Við skoðuðum tög allra dálkanna og ákváðum að öll tögin væru viðeigandi, hægt væri að breyta 
+ar, man og dagsettninga dálkunum í datetime en það tæki eflaust töluvert meira pláss og tíma frá tölvunni 
+svo að hagkvæmast væri að geyma þetta bara sem int.
+
+
+```{r}
 AV %>%
   glimpse()
 ```
   
-##c)
-Solskynsstundir voru með 21 NA's sem að við fjarlaegðum
+## c)
+
+Solskinsstundir voru með 21 NA's sem að við fjarlaegðum
 MedalRakastig, medalMaxHitiPerAr,maxHitiPerMan og dagsettningMaxHita voru hver með 
 1 NA's í sér sem að við fjarlægðum
-```r
-AV %>%
-  na.omit() %>%
-  summary()
-    
+
+```{r}
+AV <- na.omit(AV)
 ```
 
-##d)
-library(ggplot2)
+Hér bætum við við árstíðar dálki sem að er af factor tagi. Ekki er skráð
+ársmælingaraðirnar á árstíð.
+
+```{r}    
+AV <-  mutate(AV,
+              arstid = recode_factor(
+                man,
+               `12`= "Vetur", `1` = "Vetur",`2` = "Vetur",
+               `3` = "Vor",`4` = "Vor",`5` = "Vor",
+               `6` = "Sumar",`7` = "Sumar",`8` = "Sumar",
+               `9` = "Haust",`10` = "Haust",`11` = "Haust"
+                )
+              ) 
+```
+
+## d)
+
+ Hér er bætt við sér dálk með borg þar sem mælingin átti stað þ.e.a.s annaðhvort Akureyri eða Reykjavík.
+ Þessi dálkur verður mikið notaður í gröfunum hér að neðan.
+ 
+```{r}
+AV <- mutate(AV, 
+             stadur = recode_factor(
+               stod,
+               `1` = "Reykjavik",
+               `422` = "Akureyri"
+             )
+)
+```
+<!-- D1 -->
+
+#### Dæmi:
+
+  Teiknið mynd sem sýnir heildarfjölda sólskinsstunda fyrir Reykjavík og Akureyri. Segið frá í samfelldu máli hvaða ályktun þið dragið út frá myndinni.
   
-AV <- mutate(AV, nafn = recode_factor(stod,
-                           `1` = "Reykjavik",
-                           `422` = "Akureyri"
-                          ))
-  
-winter <- c(1,2,12)
-spring <- c(3,4,5)
-summer <- c(6,7,8)
-autumn <- c(9,10,11)
+#### Lausn:
 
-AV$arstid = ifelse(AV$man %in% winter, "vetur",
-              ifelse(AV$man %in% spring, "vor",
-                ifelse(AV$man %in% summer, "sumar",
-                  ifelse(AV$man %in% autumn, "haust", NA))))
+```{r}
+ggplot(AV, aes(x = stadur, y = solskinsStundir, fill = stadur)) +
+  geom_bar(stat="Identity") +
+  scale_fill_manual(values=litir) +
+  labs(title="Heildarfjöldi sólskinsstunda", 
+       subtitle="Á Akureyri og í Reykjavík á árunum 1949 - 2019", 
+       y="Sólskinsstundir", 
+       x="Staður", 
+       caption = "Source: Veðurstofan")
+       
+```
+<!-- D2 -->
 
-AV %>% 
-  mutate(arstid = recode_factor(man,
-  `12`= "Vetur", `1` = "Vetur",`2` = "Vetur",
-  `3` = "Vor",`4` = "Vor",`5` = "Vor",
-  `6` = "Sumar",`7` = "Sumar",`8` = "Sumar",
-  `9` = "Haust",`10` = "Haust",`11` = "Haust"
-  ))
+Við ályktum út frá þessu að í Reykjavík séu töluvert fleirri sólskinsdagar. Það kemur nú kannski ekkert voðalega á óvart en
+vert að minnast á að munurinn er talsverður, um það bil 25000 klukkustunda munur á 70 sem er í kringum 360 klukkkustundir sem er næstum klukkustund af sólarljósi á dag. Það er að segja að Reykjavík fær einni klukkustund meiri sólarljós á dag en Akureyri
 
-months <- c("Vetur", "Vor", "Sumar", "Haust)
+#### Dæmi:
 
-<!-- scale_x_discrete(limits = months) + -->
+Teiknið mynd sem sem lýsir dreifingu fjölda sólskinsstunda fyrir Reykjavík og Akureyri. Segið frá í samfelldu máli hvaða ályktun þið dragið út frá myndinni.
 
-AV %>%
-  filter(nafn == "Reykjavik") %>% 
-  ggplot(aes(x = arstid, y = solskynsStundir)) +
-    geom_bar(stat="Identity") +
-    labs(subtitle="", 
-       y="Meðalsólskynsstundir", 
+#### Lausn:
+Hérna er myndin okkar
+
+```{r}
+ggplot(AV, aes(x = stadur, y = solskinsStundir, fill = stadur)) +
+  geom_boxplot() +
+  scale_fill_manual(values=litir) +
+  ylim(c(0,400)) +
+  labs(title="Dreifing fjölda sólskinsstunda", 
+       subtitle="Á Akureyri og í Reykjavík á árunum 1949 - 2019", 
+       y="Sólskinsstundir", 
+       x="Stadur", 
+       caption = "Source: Veðurstofan")
+```
+<!-- #D3 -->
+
+#### Dæmi:
+
+Teiknið mynd sem sýnir sýnir heildarfjölda sólskinsstunda eftir árstíð fyrir Reykjavík og Akureyri. Segið frá í samfelldu máli hvaða ályktun þið dragið út frá myndinni.
+
+
+#### Lausn:
+
+Heildarsólskinsstundir eftir árstíðum Á Akureyri og í Reykjavík
+
+
+```{r}
+ggplot(data = AV) +
+  geom_bar(mapping = aes(x = arstid, y = solskinsStundir, fill = stadur)
+           , stat ="identity"
+           , position = "dodge") +
+  scale_fill_manual(values=litir) +
+  labs(subtitle="Á Akureyri og í Reykjavík á árunum 1949 - 2019", 
+       y="Sólskinsstundir", 
        x="Árstíðir", 
-       title="Meðalsólskynsstundir í Reykjavík eftir árstíðum", 
-       caption = "Source: yo momma")
+       title="Heildarsólskinsstundir eftir árstíðum", 
+       caption = "Source: Veðurstofa")
+```
 
-AV %>%
-  filter(nafn == "Akureyri") %>% 
-  ggplot(aes(x = arstid, y = solskynsStundir)) +
-    geom_bar(stat="Identity") +
-    labs(subtitle="", 
-       y="Meðalsólskynsstundir", 
+## e)
+
+#### Dæmi: 
+
+Teiknið mynd sem sýnir dreifingu mánaðarlegs meðalhita eftir árstíð fyrir Reykjavík og Akureyri. Segið frá í samfelldu máli hvaða ályktun þið dragið út frá myndinni.
+
+#### Lausn:
+
+Hér er dreifing mánaðarlegs meðalhita eftir árstíð fyrir staðina tvo.
+
+```{r}
+ggplot(AV, aes(x = arstid, y = medalHiti, fill = stadur)) +
+  geom_boxplot(shape=21, position = "dodge",
+             aes(fill = factor(stadur))) + 
+  scale_fill_manual(values=litir) +
+  labs(title="Dreifing meðalhita á mánuði eftir árstíðum", 
+       subtitle="Á Akureyri og í Reykjavík á árunum 1949 - 2019", 
+       y="Meðalhiti á mánuði", 
        x="Árstíðir", 
-       title="Meðalsólskynsstundir í Akureyri eftir árstíðum", 
-       caption = "Source: yo momma")
-  
+       caption = "Source: Veðurstofan")
+```
 
-AV %>%
-  ggplot(aes(x = nafn, y = solskynsStundir)) +
-    geom_bar(stat="Identity") +
-    labs(subtitle="", 
-       y="Meðalsólskynsstundir", 
-       x="Borgir", 
-       title="Meðalsólskynsstundir í Borgum", 
-       caption = "Source: yo momma")
-  
+Út frá þessu grafi að það er talsverð fylgni í meðalhita eftir árstíðum á
+stöðunum tveim en oftast virðist Reykjavík vera nokkrum gráðum heitari að meðaltali en Akureyri.
+
+<!-- E2 -->
+#### Dæmi: 
+
+Teiknið mynd sem sýnir dreifingu fjölda mánaðarlegra sólskinsstunda eftir árstíð fyrir Reykjavík og Akureyri. Segið frá í samfelldu máli hvaða ályktun þið dragið út frá myndinni.
+
+#### Lausn:
+
+Hérna er dreifing fjölda mánaðarlegra sólskinsstunda eftir árstíð fyrir staðina tvo.
+
+```{r}
+ggplot(AV, aes(x = arstid, y = solskinsStundir, fill = stadur)) +
+  geom_boxplot(shape=21, position = "dodge",
+               aes(fill = factor(stadur))) + 
+  scale_fill_manual(values=litir) +
+  labs(title="Dreifing mánaðarlegar solskinsStundir eftir árstíðum", 
+       subtitle="Á Akureyri og í Reykjavík á árunum 1949 - 2019", 
+       y="Sólskinsstundir", 
+       x="Árstíð", 
+       caption = "Source: Veðurstofan")
+```
+
+Út frá þessu grafi sést að það er talsverð fylgni í fjölda sólstunda eftir árstíðum á
+stöðunum tveim en Reykjavík fær talsvert fleirri sólstundir að meðaltali.
+
+<!-- E3 -->
+
+#### Dæmi:
+
+Teiknið mynd sem sýnir dreifingu mánaðarúrkomu eftir árstíð fyrir Reykjavík og Akureyri. Segið frá í samfelldu máli hvaða ályktun þið dragið út frá myndinni. Hvernig passar þessi niðurstaða við fjölda sólskinsstunda eftir árstíð á þessum stöðum og hvernig má útskýra það?
+
+#### Lausn
+
+Hérna er dreifing á mánaðarúrkomu eftir árstíðum á stöðunum tveimur
+
+```{r}
+ggplot(AV, aes(x = arstid, y = heildarUrkoma, fill = stadur)) +
+  geom_boxplot(shape=21, position = "dodge",
+               aes(fill = factor(stadur))) + 
+  scale_fill_manual(values=litir) +
+  labs(title="Dreifing mánaðarlegrarúrkomu eftir árstíðum", 
+       subtitle="Á Akureyri og í Reykjavík á árunum 1949 - 2019", 
+       y="Mánaðarleg úrkoma", 
+       x="Árstíð", 
+       caption = "Source: Veðurstofan")
+```
+
+Reykjavík er að meðaltali með talsvert meiri úrkomu en Akureyri allt árið um kring og stendur það á þver við sólskinsstundirnar þar sem meira sólskin ætti að þýða minni úrkoma.
+
+## f)
+
+#### Dæmi:
+
+Teiknið mynd sem lýsir sambandi mánaðarúrkomu og meðalloftþrýstings. Segið frá í samfelldu máli hvaða ályktun þið dragið út frá myndinni.
+
+#### Lausn:
+
+Höfum hér teiknað graf af sambandi heildar mánaðarúrkomu og meðal loftþrýstingi í hverjum mánuði frá árunum 1949 til 2019. Auk þess teiknum við bestu línu í gegnum grafið. Þessar mælingar eru bland af þeim frá Akureyri og Reykjavík.
+
+```{r warning = FALSE}
+ggplot(AV, aes(x = medalThristingur, y = heildarUrkoma)) +
+  geom_point() + 
+  geom_smooth(color = "red", method = 'lm',se=F) +
+  labs(title="Samband þrýstings og úrkomu", 
+       subtitle="Á Akureyri og í Reykjavík á árunum 1949 - 2019", 
+       y="Mánaðarlegúrkoma", 
+       x="Meðalloftþrýstingur", 
+       caption = "Source: Veðurstofan")
+```
+
+Sjáum að það er klárlega samband hér en að staðalfrávikið frá bestu línu sé frekar stórt. Við getum hinsvegar ályktað að hærri meðalloftþrýstingur í mánuði leiðir nokkuð sterklega til minni lægri úrkomu í þeim mánuði og öfugt, eða að lærri loftþrýstingur bendi til þess að úrkoman verði meiri. Það eru hinsvegar fleirri faldir þættir í þessu sambandi sem að valda þessu háa staðalfráviki
+
+## g)
+Þetta eru gögn á bilinu 1949 til 2019
+
+```{r warning = FALSE}
+G1 <- select(AV, man,ar)
+G1 <- AV %>% 
+  select(man,arstid, solskinsStundir, heildarUrkoma, medalVindhradi)
+glimpse(G1)
+
+
+G1 %>% 
+  group_by(arstid) %>% 
+  summarise(avgVindhradi = mean(medalVindhradi),
+            sfVindhrada = sd(medalVindhradi),
+            avgUrkomaPerMan = mean(heildarUrkoma),
+            sfUrkomu = sd(heildarUrkoma),
+            avgSolskinsstundir = mean(solskinsStundir, na.rm = TRUE),
+            sfSolskinsstundir = sd(solskinsStundir, na.rm = TRUE)
+            ) %>% 
+  knitr::kable()
+```
+
+:)
+
+
+## h)
+
+Reiknið sameiginlegt meðaltal fjölda sólskinsstunda í Reykjavík og Akureyri. Finnið svo í hversu mörgum mánuðum fjöldi sólskinsstunda fór yfir meðaltalið í Reykjavík annars vegar og Akureyri hins vegar.
+
+```{r}
+H <- AV %>%
+  select(man, solskinsStundir, stadur) %>% 
+  na.omit()
+
+
+avg <- mean(H$solskinsStundir, na.rm = TRUE)
+print(avg)
+
+
+H %>% 
+  group_by(stadur) %>% 
+  summarise(fjoldi = length(which(H$solskinsStundir > 90))) %>% 
+  knitr::kable()
+```
+
+Af einhverri ástæðu gefur R okkur til baka að fjöldinn er sá sami fyrir bæði Akureyri og Reykjavík sem að við teljum vera frekar ólíklegt. Þegar reiknað er meðaltalið fyrir hvora borg fyrir sig var fengið að meðaltalið er hærra fyrir Reykjavík svo að fjöldi mælinga yfir ætti að vera lægri og því hærri fyrir Akureyri en sama hvað var reynt heldur R því fram að hann sé sá sami. Kannski erum við einhvernveginn að bera meðaltal hvorrar staðar fyrir sig við sínar eigin mælingar og því er rökrétt að helmingurinn sé hærri en okkur dettur engin önnur lausn í hug.
+
+## i)
+
+Finnið í gögnunum og tilgreinið mestu sólarhringsúrkomu í Reykjavík og samsvarandi dagsetningu og einnig fyrir Akureyri
+
+```{r}
 AV %>% 
-  ggplot(aes(x = nafn, y = solskynsStundir)) +
-  geom_count() 
-  labs(subtitle="Tset",
-     y="Meðalsólskynsstundir",
-     x="Borgir",
-     title="Meðalsólskynsstundir í Borgum",
-     caption = "Source: yo momma")
- 
- 
- 
-##e)
+  group_by(stadur) %>% 
+  summarise(maxUrkoma = max(maxSolahringsUrkoma),
+            artal = AV[which.max(AV$maxSolahringsUrkoma),"ar"],
+            manudur = AV[which.max(AV$maxSolahringsUrkoma),"man"],
+            dagur = AV[which.max(AV$maxSolahringsUrkoma),"dagsetningMaxSolahringsUrkoma"]
+            )%>% 
+  knitr::kable()
+```
 
-##f)
-##g)
-##h)
-##i)
+Þessi tafla segir okkur að 29. desember 2012 hafi verið ótrúlegur hvað varðar úrkomu um land allt þar sem að þetta er úrkomuhæsti dagur fyrir bæði Akureyri og Reykjavík seinustu 70 árin. Smá gúgl staðfesti þetta https://www.vedur.is/um-vi/frettir/nr/2610 en hér er líka sagt frá öðrum slíkum degi sem var en verri árið 1931 en hann er ekki inni í þessu gagnasetti.
 
 
+## Upp á gaman
 
+Hérna er samanburður á vindhraðamælingum 
 
-
-
+```{r}
+ggplot(AV, aes(x = stadur, y = medalVindhradi, fill= stadur)) +
+  geom_boxplot() + 
+  scale_fill_manual(values=litir) +
+  labs(title="Meðalvindhraði", 
+       subtitle="Á Akureyri og í Reykjavík á árunum 1949 - 2019", 
+       y="Vindhraði", 
+       x="Staður", 
+       caption = "Source: Veðurstofan")
+```
+Út frá þessu grafi sést að Akureyringar mega eiga það blæs ekki mikið hjá þeim þanna að norðan.
+Þetta er eflaust vegna þess að Akureyri er í fyrði sem að hlífir þeim frá austan og vestanáttunum.
